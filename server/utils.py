@@ -3,10 +3,11 @@ import logging
 import sys
 import time
 import psycopg2
-
+import pickle
 from config import *
+from database import insert_embedding_data
 
-openai.api_key = "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"
+openai.api_key = "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"
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -19,6 +20,7 @@ def get_pinecone_id_for_file_chunk(session_id, filename, chunk_index):
     """
     Helper function to generate a unique ID for a file chunk using the session ID, filename, and chunk index.
     """
+    insert_embedding_data(filename)
     return str(session_id + "-!" + filename + "-!" + str(chunk_index))
 
 
@@ -26,7 +28,13 @@ def get_embedding(text, engine):
     """
     Gets the embedding for a given text using the OpenAI API.
     """
-    return openai.Engine(id=engine).embeddings(input=[text])["data"][0]["embedding"]
+    embeddings = openai.Engine(id=engine).embeddings(input=[text])["data"][0][
+        "embedding"
+    ]
+    embedding_bytes_list = [pickle.dumps(embedding) for embedding in embeddings]
+
+    insert_embedding_data(embedding_bytes_list)
+    return embeddings[0]
 
 
 def get_embeddings(text_array, engine):

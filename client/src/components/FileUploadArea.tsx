@@ -50,10 +50,11 @@ function FileUploadArea(props: FileUploadAreaProps) {
             // Check the file type
             if (
               file.type.match(
-                /(text\/plain|application\/(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document))/
+                /(text\/plain|application\/(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document)|text\/x-python|text\/x-java-source|application\/x-python-code)/
               ) && // AND file isnt too big
               file.size < props.maxFileSizeMB * 1024 * 1024
             ) {
+
               // Check if the file name already exists in the files state
               if (files.find((f) => f.name === file.name)) {
                 return null; // skip this file
@@ -95,8 +96,9 @@ function FileUploadArea(props: FileUploadAreaProps) {
               }
             } else {
               alert(
-                `Invalid file type or size. Only TXT, PD or DOCX are allowed, up to ${props.maxFileSizeMB}MB.`
+                `Invalid file type or size. Only TXT, PDF, DOCX, PY, JAVA and TXT files are allowed, up to ${props.maxFileSizeMB}MB.`
               );
+
               return null; // Skip this file
             }
           })

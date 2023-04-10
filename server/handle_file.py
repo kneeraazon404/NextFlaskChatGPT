@@ -6,7 +6,7 @@ from PyPDF2 import PdfReader
 from numpy import array, average
 from flask import current_app
 from config import *
-from database import insert_data
+from database import insert_embedding_data
 from utils import get_embeddings, get_pinecone_id_for_file_chunk
 import ast
 
@@ -21,7 +21,7 @@ logging.basicConfig(
 # Handle a file by extracting its text, creating embeddings, and upserting them to Pinecone
 def handle_file(file, session_id, pinecone_index, tokenizer):
     """Handle a file by extracting its text, creating embeddings, and upserting them to Pinecone."""
-    filename = file.filename
+    filename = file.name
     logging.info("[handle_file] Handling file: {}".format(filename))
 
     # Get the file text dict from the current app config
@@ -134,10 +134,6 @@ def handle_file_string(
 
             # Save data to the database
             for file_chunk_id, embedding, metadata in batch:
-                insert_data(
-                    metadata["filename"],
-                )
-
                 logging.info(
                     "[handle_file_string] Inserted data into database for file chunk id: {}".format(
                         file_chunk_id
@@ -183,7 +179,6 @@ def create_embeddings_for_text(text, tokenizer):
         embeddings.extend([embedding["embedding"] for embedding in embeddings_response])
 
     text_embeddings = list(zip(text_chunks, embeddings))
-    insert_data(text_embeddings)
 
     average_embedding = get_col_average_from_list_of_lists(embeddings)
 

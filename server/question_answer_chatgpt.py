@@ -1,14 +1,24 @@
+import logging
+import openai
+from transformers import AutoTokenizer, AutoModelForCausalLM
 from utils import get_embedding
 from flask import jsonify
 from config import *
 from flask import current_app
 
-import openai
-
-from config import *
 from database import insert_qa_data
 
 TOP_K = 10
+
+tokenizer = AutoTokenizer.from_pretrained(GENERATIVE_MODEL)
+model = AutoModelForCausalLM.from_pretrained(GENERATIVE_MODEL)
+
+
+def get_chatgpt_answer(prompt):
+    inputs = tokenizer(prompt, return_tensors="pt")
+    outputs = model.generate(inputs.input_ids, max_length=1000, do_sample=True)
+    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return response.strip()
 
 
 def get_answer_from_files(question, session_id, pinecone_index):
@@ -31,8 +41,7 @@ def get_answer_from_files(question, session_id, pinecone_index):
         files_string = ""
         file_text_dict = current_app.config["file_text_dict"]
 
-        for i in range(len(query_response.matches)):
-            result = query_response.matches[i]
+        for i, result in enumerate(query_response.matches):
             file_chunk_id = result.id
             score = result.score
             filename = result.metadata["filename"]
@@ -62,22 +71,16 @@ def get_answer_from_files(question, session_id, pinecone_index):
 
         logging.info(f"[get_answer_from_files] prompt: {prompt}")
 
-        response = openai.Completion.create(
-            prompt=prompt,
-            temperature=0,
-            max_tokens=1000,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
-            engine=GENERATIVE_MODEL,
-        )
-
-        answer = response.choices[0].text.strip()
+        answer = get_chatgpt_answer(prompt)
         insert_qa_data(question, answer)
         logging.info(f"[get_answer_from_files] answer: {answer}")
-
         return jsonify({"answer": answer})
 
     except Exception as e:
-        logging.info(f"[get_answer_from_files] error: {e}")
+        logging.error(f"[get_answer_from_files] error: {e}")
         return str(e)
+
+    finally:
+        logging.info(
+            f"[get_answer_from_files] Completed getting answer for question: {question}"
+        )
