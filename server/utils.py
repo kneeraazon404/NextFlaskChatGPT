@@ -7,7 +7,7 @@ import pickle
 from config import *
 from database import insert_embedding_data
 
-openai.api_key = "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"
+openai.api_key = "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"
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,

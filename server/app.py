@@ -13,7 +13,6 @@ from flask import request
 
 from handle_file import handle_file
 from answer_question import get_answer_from_files
-from question_answer_chatgpt import get_chatgpt_answer
 
 logging.basicConfig(
     level=logging.INFO,
@@ -78,7 +77,7 @@ def answer_question():
         params = request.get_json()
         question = params["question"]
         # If you want to get response from chat gpt replace the function call get_answer_from_files to get_chatgpt_answer
-        answer_question_response = get_chatgpt_answer(
+        answer_question_response = get_answer_from_files(
             question, app.session_id, app.pinecone_index
         )
         return answer_question_response

@@ -56,8 +56,7 @@ def get_answer_from_files(question, session_id, pinecone_index):
             f'Use the following format:\n\nQuestion: <question>\n\nFiles:\n<###\n"filename 1"\nfile text>\n<###\n"filename 2"\nfile text>...\n\n'
             f'Answer: <answer or "I couldn\'t find the answer to that question in your files" or "That\'s not a valid question.">\n\n'
             f"Question: {question}\n\n"
-            f"Files:\n{files_string}\n"
-            f"Answer:"
+            f"Files:\n{files_string}\n\n"
         )
 
         logging.info(f"[get_answer_from_files] prompt: {prompt}")
@@ -72,12 +71,32 @@ def get_answer_from_files(question, session_id, pinecone_index):
             engine=GENERATIVE_MODEL,
         )
 
-        answer = response.choices[0].text.strip()
-        insert_qa_data(question, answer)
-        logging.info(f"[get_answer_from_files] answer: {answer}")
-
-        return jsonify({"answer": answer})
+        pinecone_answer = response.choices[0].text.strip()
+        insert_qa_data(question, pinecone_answer)
+        logging.info(f"[get_answer_from_files] answer: {pinecone_answer}")
 
     except Exception as e:
-        logging.info(f"[get_answer_from_files] error: {e}")
-        return str(e)
+        logging.error(f"[get_answers] Error with ChatGPT: {e}")
+        chatgpt_answer = "I'm sorry, I couldn't generate an answer for your question."
+    # return jsonify({"answer": answer})
+    # Get answer from ChatGPT
+    try:
+        chatgpt_prompt = f"Q: {question}\nA: "
+        chatgpt_response = openai.Completion.create(
+            prompt=chatgpt_prompt,
+            temperature=0.7,
+            max_tokens=1000,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0,
+            engine=GENERATIVE_MODEL,
+        )
+
+        chatgpt_answer = chatgpt_response.choices[0].text.strip()
+        insert_qa_data(question, chatgpt_answer)
+        logging.info(f"[get_answers] ChatGPT answer: {chatgpt_answer}")
+
+    except Exception as e:
+        logging.error(f"[get_answers] Error with ChatGPT: {e}")
+        chatgpt_answer = "I'm sorry, I couldn't generate an answer for your question."
+    return jsonify({"pinecone_answer": pinecone_answer, "answer": chatgpt_answer})
